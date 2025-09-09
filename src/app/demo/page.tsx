@@ -72,7 +72,7 @@ function GridItemComponent({
     transition: transition2,
     isDragging: isDragging2,
     isOver: isOver2,
-  } = useSortable({ id: item.id + '1' })
+  } = useSortable({ id: item.id + '_ghost' })
   // Solo deshabilitar el transform visual cuando se arrastra desde el grid y no es el item activo
   const style = {
     transform: isDraggingFromGrid ? 'none' : CSS.Transform.toString(transform),
