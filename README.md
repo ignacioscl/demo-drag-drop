@@ -28,21 +28,23 @@ Visita `http://localhost:3000/demo` para ver la demo interactiva.
 
 ## 🃏 Tipos de Tarjetas
 
-| Tipo | Color | Descripción | Combinaciones |
-|------|-------|-------------|---------------|
-| **Type1** | 🔵 Azul | Tarjeta tipo 1 | Se combina con otras Type1 |
-| **Type2** | 🟢 Verde | Tarjeta tipo 2 | Se combina con otras Type2 |
+| Tipo      | Color     | Descripción    | Combinaciones              |
+| --------- | --------- | -------------- | -------------------------- |
+| **Type1** | 🔵 Azul   | Tarjeta tipo 1 | Se combina con otras Type1 |
+| **Type2** | 🟢 Verde  | Tarjeta tipo 2 | Se combina con otras Type2 |
 | **Type3** | 🟣 Morado | Tarjeta tipo 3 | Se combina con otras Type3 |
 
 ## 📋 Paneles y Reglas
 
 ### 🏢 Panel Principal (Grid)
+
 - ✅ **Acepta**: Todas las tarjetas desde el sidebar
 - 🔄 **Combinaciones**: Habilitadas para tarjetas del mismo tipo
 - 📊 **Reordenamiento**: Sin confusión visual durante drag interno
 - 🎯 **Especial**: Placeholder grisado durante reordenamiento
 
 ### 🗃️ Panel Lateral (Sidebar)
+
 - ✅ **Contiene**: Tarjetas disponibles para arrastrar
 - 🔄 **Función**: Fuente de nuevas tarjetas para el grid
 - 📊 **Límite**: 5 tarjetas predefinidas
@@ -59,6 +61,7 @@ Las combinaciones ocurren cuando arrastras una tarjeta sobre otra del mismo tipo
 ```
 
 ### Indicadores Visuales:
+
 - **Línea azul superior**: Inserción normal (tipos diferentes)
 - **Borde azul**: Combinación disponible (mismo tipo)
 - **Placeholder grisado**: Posición original durante reordenamiento interno
@@ -120,16 +123,18 @@ src/
 ## 🎯 Características Avanzadas
 
 ### Detección de Origen de Drag
+
 ```typescript
 // Detecta si el drag viene del grid o del sidebar
 const handleDragStart = (event: DragStartEvent) => {
-  setActiveId(event.active.id as string)
-  const isFromGrid = gridItems.some(item => item.id === event.active.id)
-  setIsDraggingFromGrid(isFromGrid)
-}
+  setActiveId(event.active.id as string);
+  const isFromGrid = gridItems.some((item) => item.id === event.active.id);
+  setIsDraggingFromGrid(isFromGrid);
+};
 ```
 
 ### Placeholder Inteligente
+
 ```typescript
 // Muestra placeholder grisado durante reordenamiento interno
 if (isDragging && isActiveItem) {
@@ -142,16 +147,17 @@ if (isDragging && isActiveItem) {
 ```
 
 ### Combinaciones por Tipo
+
 ```typescript
 // Verifica si se puede combinar (mismo tipo)
 if (activeItem && overItem && activeItem.type === overItem.type) {
   // Lógica de combinación
-  setGridItems(items => {
-    const overIndex = items.findIndex(item => item.id === over.id)
-    const newItems = [...items]
-    newItems.splice(overIndex + 1, 0, newItem) // Insertar a la derecha
-    return newItems
-  })
+  setGridItems((items) => {
+    const overIndex = items.findIndex((item) => item.id === over.id);
+    const newItems = [...items];
+    newItems.splice(overIndex + 1, 0, newItem); // Insertar a la derecha
+    return newItems;
+  });
 }
 ```
 
@@ -171,12 +177,14 @@ npm run build
 ## 🚀 Deploy
 
 ### Vercel (Recomendado)
+
 ```bash
 npm install -g vercel
 vercel
 ```
 
 ### Docker
+
 ```bash
 docker build -t card-system .
 docker run -p 3000:3000 card-system
@@ -206,6 +214,7 @@ Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
 ## 👨‍💻 Autor
 
 **Tu Nombre**
+
 - GitHub: [@tuusuario](https://github.com/tuusuario)
 - LinkedIn: [tu-perfil](https://linkedin.com/in/tu-perfil)
 - Email: tu@email.com
@@ -219,7 +228,7 @@ Este proyecto está bajo la Licencia MIT. Ver `LICENSE` para más detalles.
 1. **Arrastrar desde Sidebar**: Toma cualquier tarjeta del panel lateral y arrástrala al grid
 2. **Combinar Tarjetas**: Arrastra una tarjeta sobre otra del mismo tipo para combinarlas
 3. **Reordenar**: Arrastra tarjetas dentro del grid para reordenarlas
-4. **Indicadores Visuales**: 
+4. **Indicadores Visuales**:
    - Línea azul = inserción normal
    - Borde azul = combinación disponible
    - Placeholder grisado = reordenamiento interno

@@ -1,8 +1,6 @@
-
-
-import Features from '@/components/sections/Features'
-import Header from '@/components/layaut/Header'
-import Hero from '@/components/sections/Hero'
+import Features from "@/components/sections/Features";
+import Header from "@/components/layaut/Header";
+import Hero from "@/components/sections/Hero";
 
 export default function Home() {
   return (
@@ -11,5 +9,5 @@ export default function Home() {
       <Hero />
       <Features />
     </main>
-  )
+  );
 }
