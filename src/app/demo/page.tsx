@@ -12,6 +12,7 @@ import {
   useSensors,
   useDraggable,
   useDroppable,
+  pointerWithin,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -45,15 +46,13 @@ function GridItemComponent({
   isOverlay = false, 
   canCombine = false,
   isDraggingFromGrid = false,
-  isActiveItem = false,
-  activeId = null
+  isActiveItem = false
 }: { 
   item: GridItem, 
   isOverlay?: boolean,
   canCombine?: boolean,
   isDraggingFromGrid?: boolean,
-  isActiveItem?: boolean,
-  activeId?: string | null
+  isActiveItem?: boolean
 }) {
   const {
     attributes,
@@ -65,6 +64,15 @@ function GridItemComponent({
     isOver,
   } = useSortable({ id: item.id })
 
+  const {
+    attributes: attributes2,
+    listeners: listeners2,
+    setNodeRef: setNodeRef2,
+    transform: transform2,
+    transition: transition2,
+    isDragging: isDragging2,
+    isOver: isOver2,
+  } = useSortable({ id: item.id + '1' })
   // Solo deshabilitar el transform visual cuando se arrastra desde el grid y no es el item activo
   const style = {
     transform: isDraggingFromGrid ? 'none' : CSS.Transform.toString(transform),
@@ -107,15 +115,10 @@ function GridItemComponent({
     )
   }
 
-  const handleDragOverSection = (event: React.DragEvent, sectionNumber: number) => {
-    // Solo mostrar console log si hay algo siendo arrastrado (activeId existe en el contexto superior)
-    if (activeId) {
-      console.log(`Arrastrando sobre la sección ${sectionNumber} de la card ${item.name} (ID: ${item.id}) en el grid`)
-    }
-  }
-
   return (
-    <div className="relative">
+    <div className="flex">
+      <div className="w-[30px] h-24 border border-red-500 flex items-center justify-center text-xs font-bold text-red-500 bg-white">aa</div>
+      <div className="relative flex-1">
       {/* Indicador de inserción superior */}
       {isOver && !canCombine && (
         <div className="absolute -top-1 left-0 right-0 h-0.5 bg-blue-500 rounded-full z-10" />
@@ -127,47 +130,19 @@ function GridItemComponent({
         {...attributes}
         {...listeners}
         className={`
-          h-24 rounded-lg flex text-white font-medium
-          cursor-grab active:cursor-grabbing transition-all relative
+          h-24 rounded-lg flex items-center justify-center text-white font-medium
+          cursor-grab active:cursor-grabbing transition-all
           ${isDragging ? 'opacity-50' : 'opacity-100'}
           ${canCombine ? 'ring-4 ring-blue-500 ring-opacity-75' : ''}
           ${item.color}
         `}
       >
-        {/* Sección 1 - Izquierda */}
-        <div 
-          className="flex-1 flex items-center justify-center border-r border-white/20 rounded-l-lg"
-          onDragOver={(e) => handleDragOverSection(e, 1)}
-          onDragEnter={(e) => handleDragOverSection(e, 1)}
-        >
-          <div className="text-center">
-            <div className="text-xs font-bold">S1</div>
-          </div>
-        </div>
-        
-        {/* Sección 2 - Centro */}
-        <div 
-          className="flex-1 flex items-center justify-center border-r border-white/20"
-          onDragOver={(e) => handleDragOverSection(e, 2)}
-          onDragEnter={(e) => handleDragOverSection(e, 2)}
-        >
-          <div className="text-center">
-            <div className="text-sm font-bold">{item.name}</div>
-            <div className="text-xs opacity-75">{item.type}</div>
-          </div>
-        </div>
-        
-        {/* Sección 3 - Derecha */}
-        <div 
-          className="flex-1 flex items-center justify-center rounded-r-lg"
-          onDragOver={(e) => handleDragOverSection(e, 3)}
-          onDragEnter={(e) => handleDragOverSection(e, 3)}
-        >
-          <div className="text-center">
-            <div className="text-xs font-bold">S3</div>
-          </div>
+        <div className="text-center">
+          <div className="text-sm font-bold">{item.name}</div>
+          <div className="text-xs opacity-75">{item.type}</div>
         </div>
       </div>
+    </div>
     </div>
   )
 }
@@ -238,7 +213,7 @@ function DroppableGrid({ children }: { children: React.ReactNode }) {
   })
 
   return (
-    <div ref={setNodeRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div ref={setNodeRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 ">
       {children}
     </div>
   )
@@ -440,6 +415,7 @@ export default function DemoPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <DndContext
           sensors={sensors}
+          collisionDetection={pointerWithin}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
@@ -457,7 +433,6 @@ export default function DemoPage() {
                       canCombine={canCombineWith === item.id}
                       isDraggingFromGrid={isDraggingFromGrid && activeId !== item.id}
                       isActiveItem={isDraggingFromGrid && activeId === item.id}
-                      activeId={activeId}
                     />
                   ))}
                   <EmptyPlaceholder isOver={overId === 'empty-placeholder'} />
@@ -498,7 +473,7 @@ export default function DemoPage() {
 
           <DragOverlay>
             {activeItem ? (
-              <GridItemComponent item={activeItem} isOverlay={true} activeId={activeId} />
+              <GridItemComponent item={activeItem} isOverlay={true} />
             ) : null}
           </DragOverlay>
         </DndContext>
