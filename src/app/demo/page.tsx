@@ -45,12 +45,14 @@ function GridItemComponent({
   canCombine = false,
   isDraggingFromGrid = false,
   isActiveItem = false,
+  isDragBetweenCards = false,
 }: {
   item: GridItem;
   isOverlay?: boolean;
   canCombine?: boolean;
   isDraggingFromGrid?: boolean;
   isActiveItem?: boolean;
+  isDragBetweenCards?: boolean;
 }) {
   const {
     attributes,
@@ -95,9 +97,9 @@ function GridItemComponent({
     return (
       <div className="relative">
         {/* Indicador de inserción superior */}
-        {isOver && !canCombine && (
+        {/*isOver && !canCombine && (
           <div className="absolute -top-1 left-0 right-0 h-0.5 bg-blue-500 rounded-full z-10" />
-        )}
+        )*/}
 
         <div
           className={`
@@ -116,20 +118,22 @@ function GridItemComponent({
   }
 
   return (
-    <div className="flex">
+    <div className="flex mt-3">
       <div
         ref={setNodeRef2}
         {...attributes2}
         {...listeners2}
-        className="w-[30px] h-24 border border-red-500 flex items-center justify-center text-xs font-bold text-red-500 bg-white"
+        className="w-[30px] h-24 flex items-center justify-center relative"
       >
-        aa
+        {isDragBetweenCards && (
+          <div className="absolute left-1/2 top-0 bottom-0 w-1 bg-blue-500 transform -translate-x-1/2"></div>
+        )}
       </div>
       <div className="relative flex-1">
         {/* Indicador de inserción superior */}
-        {isOver && !canCombine && (
+        {/*isOver && !canCombine && (
           <div className="absolute -top-1 left-0 right-0 h-0.5 bg-blue-500 rounded-full z-10" />
-        )}
+        )*/}
 
         <div
           ref={setNodeRef}
@@ -161,16 +165,19 @@ function EmptyPlaceholder({ isOver }: { isOver: boolean }) {
   });
 
   return (
-    <div
-      ref={setNodeRef}
-      className={`
+    <div className="flex mt-3">
+      <div className="w-[30px] h-24  flex items-center justify-center "></div>
+      <div
+        ref={setNodeRef}
+        className={`
         h-24 rounded-lg border-2 border-dashed border-gray-300 
         flex items-center justify-center text-gray-500 font-medium
-        transition-all duration-200
+        transition-all duration-200 flex-1
         ${isOver ? "border-blue-500 bg-blue-50 text-blue-600" : "bg-gray-50"}
       `}
-    >
-      {isOver ? "Soltar aquí" : "Agregar elemento"}
+      >
+        {isOver ? "Soltar aquí" : "Agregar elemento"}
+      </div>
     </div>
   );
 }
@@ -312,7 +319,7 @@ export default function DemoPage() {
       const overItem =
         gridItems.find((item) => item.id === over.id) ||
         sidebarItems.find((item) => item.id === over.id);
-
+      setIsDragBetweenCards(over && over.id.toString().endsWith("_ghost"));
       if (
         activeItem &&
         overItem &&
@@ -325,6 +332,7 @@ export default function DemoPage() {
       }
     } else {
       setCanCombineWith(null);
+      setIsDragBetweenCards(false);
     }
   };
 
@@ -336,6 +344,7 @@ export default function DemoPage() {
       setOverId(null);
       setCanCombineWith(null);
       setIsDraggingFromGrid(false);
+      setIsDragBetweenCards(false);
       return;
     }
 
@@ -345,8 +354,51 @@ export default function DemoPage() {
     const overItem =
       gridItems.find((item) => item.id === over.id) ||
       sidebarItems.find((item) => item.id === over.id);
+    console.log("activeItem", activeItem);
+    console.log("overItem", overItem);
+    console.log("over.id", over.id);
 
-    // Verificar si se puede combinar (mismo tipo)
+    // Verificar si se suelta sobre setNodeRef2 (el div "aa")
+    if (over.id.toString().endsWith("_ghost")) {
+      const targetItemId = over.id.toString().split("_")[0];
+      console.log("Soltando sobre setNodeRef2, targetItemId:", targetItemId);
+
+      // Intercalar en esa posición específica
+      if (active.id.toString().startsWith("sidebar-")) {
+        const sidebarItem = sidebarItems.find((item) => item.id === active.id);
+        if (!sidebarItem) return;
+
+        const newItem: GridItem = {
+          id: `grid-${Date.now()}`,
+          name: sidebarItem.name,
+          color: sidebarItem.color,
+          type: sidebarItem.type,
+        };
+
+        setGridItems((items) => {
+          const targetIndex = items.findIndex(
+            (item) => item.id === targetItemId,
+          );
+          const newItems = [...items];
+          newItems.splice(targetIndex, 0, newItem);
+          return newItems;
+        });
+      } else {
+        // Reordenar dentro del grid
+        setGridItems((items) => {
+          const oldIndex = items.findIndex((item) => item.id === active.id);
+          const targetIndex = items.findIndex(
+            (item) => item.id === targetItemId,
+          );
+
+          if (oldIndex !== -1 && targetIndex !== -1) {
+            return arrayMove(items, oldIndex, targetIndex);
+          }
+          return items;
+        });
+      }
+    }
+    // Verificar si se puede combinar (mismo tipo) - solo para combinación, no inserción
     if (
       activeItem &&
       overItem &&
@@ -397,8 +449,11 @@ export default function DemoPage() {
         // No hacer nada, solo el console.log
       }
     }
-    // Si NO se puede combinar, comportamiento normal de inserción
-    else if (active.id.toString().startsWith("sidebar-")) {
+    // Si se suelta en el placeholder vacío, agregar al final
+    else if (
+      over.id === "empty-placeholder" &&
+      active.id.toString().startsWith("sidebar-")
+    ) {
       const sidebarItem = sidebarItems.find((item) => item.id === active.id);
       if (!sidebarItem) return;
 
@@ -409,44 +464,37 @@ export default function DemoPage() {
         type: sidebarItem.type,
       };
 
-      // Si se suelta en el placeholder vacío, agregar al final
-      if (over.id === "empty-placeholder") {
-        setGridItems((items) => [...items, newItem]);
-      }
-      // Si se suelta sobre un elemento del grid, insertar en esa posición
-      else if (gridItems.some((item) => item.id === over.id)) {
-        setGridItems((items) => {
-          const overIndex = items.findIndex((item) => item.id === over.id);
-          const newItems = [...items];
-          newItems.splice(overIndex, 0, newItem);
-          return newItems;
-        });
-      }
-      // Si se suelta sobre el contenedor del grid, agregar al final
-      else if (over.id === "grid-container") {
-        setGridItems((items) => [...items, newItem]);
-      }
+      setGridItems((items) => [...items, newItem]);
     }
-    // Si estamos reordenando dentro del grid (sin combinación)
+    // Si se suelta sobre el contenedor del grid, agregar al final
     else if (
-      !active.id.toString().startsWith("sidebar-") &&
-      active.id !== over.id
+      over.id === "grid-container" &&
+      active.id.toString().startsWith("sidebar-")
     ) {
-      setGridItems((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
+      const sidebarItem = sidebarItems.find((item) => item.id === active.id);
+      if (!sidebarItem) return;
 
-        if (oldIndex !== -1 && newIndex !== -1) {
-          return arrayMove(items, oldIndex, newIndex);
-        }
-        return items;
-      });
+      const newItem: GridItem = {
+        id: `grid-${Date.now()}`,
+        name: sidebarItem.name,
+        color: sidebarItem.color,
+        type: sidebarItem.type,
+      };
+
+      setGridItems((items) => [...items, newItem]);
+    }
+    // Si no es del mismo tipo y no es sobre setNodeRef2, no hacer nada
+    else {
+      console.log(
+        "No se puede combinar y no es sobre setNodeRef2 - no hacer nada",
+      );
     }
 
     setActiveId(null);
     setOverId(null);
     setCanCombineWith(null);
     setIsDraggingFromGrid(false);
+    setIsDragBetweenCards(false);
   };
 
   const activeItem =
@@ -505,6 +553,12 @@ export default function DemoPage() {
                         isDraggingFromGrid && activeId !== item.id
                       }
                       isActiveItem={isDraggingFromGrid && activeId === item.id}
+                      isDragBetweenCards={
+                        isDragBetweenCards &&
+                        (overId &&
+                          overId.toString().endsWith("_ghost") &&
+                          overId.split("_")[0]) === item.id
+                      }
                     />
                   ))}
                   <EmptyPlaceholder isOver={overId === "empty-placeholder"} />
