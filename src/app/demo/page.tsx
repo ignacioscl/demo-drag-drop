@@ -29,6 +29,7 @@ interface GridItem {
   name: string;
   color: string;
   type: CardType;
+  groupedItems?: GridItem[];
 }
 
 interface SidebarItem {
@@ -46,6 +47,7 @@ function GridItemComponent({
   isDraggingFromGrid = false,
   isActiveItem = false,
   isDragBetweenCards = false,
+  onEyeClick,
 }: {
   item: GridItem;
   isOverlay?: boolean;
@@ -53,6 +55,7 @@ function GridItemComponent({
   isDraggingFromGrid?: boolean;
   isActiveItem?: boolean;
   isDragBetweenCards?: boolean;
+  onEyeClick?: (item: GridItem) => void;
 }) {
   const {
     attributes,
@@ -148,9 +151,39 @@ function GridItemComponent({
           ${item.color}
         `}
         >
-          <div className="text-center">
+          <div className="text-center relative w-full">
             <div className="text-sm font-bold">{item.name}</div>
             <div className="text-xs opacity-75">{item.type}</div>
+            {item.groupedItems && item.groupedItems.length > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEyeClick?.(item);
+                }}
+                className="absolute top-1 right-1 text-white hover:text-gray-300 transition-colors"
+                title="Ver elementos agrupados"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -286,6 +319,8 @@ export default function DemoPage() {
   const [canCombineWith, setCanCombineWith] = useState<string | null>(null);
   const [isDraggingFromGrid, setIsDraggingFromGrid] = useState<boolean>(false);
   const [isDragBetweenCards, setIsDragBetweenCards] = useState<boolean>(false);
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [selectedItem, setSelectedItem] = useState<GridItem | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -304,6 +339,11 @@ export default function DemoPage() {
     // Determinar si se está arrastrando desde el grid
     const isFromGrid = gridItems.some((item) => item.id === event.active.id);
     setIsDraggingFromGrid(isFromGrid);
+  };
+
+  const handleEyeClick = (item: GridItem) => {
+    setSelectedItem(item);
+    setModalOpen(true);
   };
 
   const handleDragOver = (event: DragOverEvent) => {
@@ -420,11 +460,26 @@ export default function DemoPage() {
         };
 
         setGridItems((items) => {
-          const overIndex = items.findIndex((item) => item.id === over.id);
-          const newItems = [...items];
-          newItems.splice(overIndex + 1, 0, newItem); // Insertar a la derecha
-          return newItems;
+          return items.map((item) => {
+            if (item.id === over.id) {
+              return {
+                ...item,
+                groupedItems: [...(item.groupedItems || []), newItem],
+              };
+            }
+            return item;
+          });
         });
+
+        // Abrir modal con el elemento que recibió la nueva tarjeta
+        const targetItem = gridItems.find((item) => item.id === over.id);
+        if (targetItem) {
+          setSelectedItem({
+            ...targetItem,
+            groupedItems: [...(targetItem.groupedItems || []), newItem],
+          });
+          setModalOpen(true);
+        }
       }
       // Si se arrastra dentro del grid
       else if (
@@ -432,14 +487,32 @@ export default function DemoPage() {
         gridItems.some((item) => item.id === over.id)
       ) {
         setGridItems((items) => {
-          const oldIndex = items.findIndex((item) => item.id === active.id);
-          const newIndex = items.findIndex((item) => item.id === over.id);
+          const draggedItem = items.find((item) => item.id === active.id);
+          if (!draggedItem) return items;
 
-          if (oldIndex !== -1 && newIndex !== -1) {
-            return arrayMove(items, oldIndex, newIndex);
-          }
-          return items;
+          return items
+            .map((item) => {
+              if (item.id === over.id) {
+                return {
+                  ...item,
+                  groupedItems: [...(item.groupedItems || []), draggedItem],
+                };
+              }
+              return item;
+            })
+            .filter((item) => item.id !== active.id); // Remover el elemento arrastrado del grid
         });
+
+        // Abrir modal con el elemento que recibió la tarjeta
+        const targetItem = gridItems.find((item) => item.id === over.id);
+        const draggedItem = gridItems.find((item) => item.id === active.id);
+        if (targetItem && draggedItem) {
+          setSelectedItem({
+            ...targetItem,
+            groupedItems: [...(targetItem.groupedItems || []), draggedItem],
+          });
+          setModalOpen(true);
+        }
       }
       // Si se arrastra desde sidebar al sidebar
       else if (
@@ -559,6 +632,7 @@ export default function DemoPage() {
                           overId.toString().endsWith("_ghost") &&
                           overId.split("_")[0]) === item.id
                       }
+                      onEyeClick={handleEyeClick}
                     />
                   ))}
                   <EmptyPlaceholder isOver={overId === "empty-placeholder"} />
@@ -611,10 +685,88 @@ export default function DemoPage() {
 
           <DragOverlay>
             {activeItem ? (
-              <GridItemComponent item={activeItem} isOverlay={true} />
+              <GridItemComponent
+                item={activeItem}
+                isOverlay={true}
+                onEyeClick={handleEyeClick}
+              />
             ) : null}
           </DragOverlay>
         </DndContext>
+
+        {/* Modal para mostrar elementos agrupados */}
+        {modalOpen && selectedItem && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Elementos agrupados en {selectedItem.name}
+                </h2>
+                <button
+                  onClick={() => setModalOpen(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Elemento principal */}
+                <div className="p-4 border rounded-lg bg-gray-50">
+                  <h3 className="font-semibold text-gray-900 mb-2">
+                    Elemento principal:
+                  </h3>
+                  <div
+                    className={`${selectedItem.color} text-white p-3 rounded-lg`}
+                  >
+                    <div className="text-sm font-bold">{selectedItem.name}</div>
+                    <div className="text-xs opacity-75">
+                      {selectedItem.type}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Elementos agrupados */}
+                {selectedItem.groupedItems &&
+                  selectedItem.groupedItems.length > 0 && (
+                    <div className="p-4 border rounded-lg">
+                      <h3 className="font-semibold text-gray-900 mb-2">
+                        Elementos agrupados ({selectedItem.groupedItems.length}
+                        ):
+                      </h3>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {selectedItem.groupedItems.map((groupedItem) => (
+                          <div
+                            key={groupedItem.id}
+                            className={`${groupedItem.color} text-white p-3 rounded-lg`}
+                          >
+                            <div className="text-sm font-bold">
+                              {groupedItem.name}
+                            </div>
+                            <div className="text-xs opacity-75">
+                              {groupedItem.type}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
