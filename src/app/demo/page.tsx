@@ -160,7 +160,7 @@ function GridItemComponent({
                   e.stopPropagation();
                   onEyeClick?.(item);
                 }}
-                className="absolute top-1 right-1 text-white hover:text-gray-300 transition-colors"
+                className="absolute top-1 right-1 text-white hover:text-gray-300 transition-colors cursor-pointer"
                 title="Ver elementos agrupados"
               >
                 <svg
@@ -704,7 +704,7 @@ export default function DemoPage() {
                 </h2>
                 <button
                   onClick={() => setModalOpen(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 cursor-pointer"
                 >
                   <svg
                     className="w-6 h-6"
@@ -763,6 +763,26 @@ export default function DemoPage() {
                       </div>
                     </div>
                   )}
+              </div>
+
+              {/* Botones del modal */}
+              <div className="flex justify-end space-x-3 mt-6 pt-4 border-t">
+                <button
+                  onClick={() => setModalOpen(false)}
+                  className="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    // Aquí puedes agregar la lógica para guardar los cambios
+                    console.log("Guardando elementos agrupados:", selectedItem);
+                    setModalOpen(false);
+                  }}
+                  className="px-4 py-2 text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors cursor-pointer"
+                >
+                  Guardar
+                </button>
               </div>
             </div>
           </div>
